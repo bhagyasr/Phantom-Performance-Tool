@@ -1,0 +1,268 @@
+<html>
+	<head>
+		<title>PhantomJS App</title>
+		<script src="angular.min.js"></script>
+		<link rel="stylesheet" href="bootstrap-3.3.5-dist/css/bootstrap.min.css">
+		<link rel="stylesheet" href="phantomCSS.css">
+		<script>
+			function PhantomFn($scope, $http) {
+				//console.log("In Phantom Fn");
+				$scope.jsonFile = null; <!-- the response from server is stored in jsonFile (not actually a json file) -->
+				$scope.loading = false; <!-- loading variable is used to disable the page when the phantom script is running -->
+				$scope.phantomError = null; <!-- in case an incompatible url or not a url is entered, then the error thrown by phantom is stored in phantomError -->
+				$scope.webpageError = null; <!-- the errors in the page are stored in webpageError -->
+				$scope.CalculateFn = function() {
+					$scope.loading = true;
+					$scope.jsonFile = null;
+					$scope.webpageError = null;
+					$scope.phantomError = null;
+					//console.log("in calculate fn : "+$scope.urlmodel);
+					//console.log("in checkbox : "+$scope.loginModel);
+					
+					var inputjs = {url : $scope.urlmodel, login: $scope.loginModel};
+					$http.post("/phantom/", inputjs). success(function(response){ <!-- phantom script is run on the mentioned url and pageReport.json file is created -->
+						//console.log("http post got a response : "+response); <!-- response is always an error -->
+						if(response.indexOf("Incorrect URL. Please enter proper URL along with http/s") > -1 ){
+							//console.log("\n in if");
+							$scope.phantomError = response;
+							$scope.jsonFile = null;
+							$scope.loading = false;
+						}
+						else if(response.indexOf("Unable to login to this URL") > -1 ){
+							//console.log("\n in else if");
+							$scope.phantomError = response;
+							$scope.jsonFile = null;
+							$scope.loading = false;
+						} else {
+							//console.log("\n in else");
+							if (response != "") <!-- these are web page errors and not phantomjs errors -->
+								$scope.webpageError = response;
+							
+							$http.get("/json/"). success(function(response){ <!-- store the pageReport.json file into jsonFile variable -->
+								//console.log("get response : ",response);
+								$scope.jsonFile = response;
+								$scope.loading = false;
+							});
+						}
+					});
+				}
+			}
+			angular.module('PhantomApp', []).controller("PhantomCtrl", PhantomFn);
+		</script>
+	</head>
+	<body class = "container jumbotron" ng-app="PhantomApp" ng-controller="PhantomCtrl">
+		<div style="text-align:right"><a href="index1.html">Click here to check previous reports !!!</a></div>
+		<br><br>
+<!-- The div code below is for the inputs of the page -->
+		<div class="row">
+			<div class = "pad12 col-md-2 center-align loginbox">
+				<span class="logintext">Log in : </span><input type="checkbox" class="logincheck" ng-model="loginModel" ng-disabled="loading">
+			</div>
+			<div class = "pad12 col-md-10 center-align">
+				<div class="input-group input-group-lg">
+					<input type="text" class="form-control" placeholder="Enter URL along with http/s" ng-model="urlmodel">
+					<span class="input-group-btn">
+						<button class="btn btn-success" type="button" ng-model="calModel" ng-disabled="loading" ng-click="CalculateFn()">Calculate!</button>
+					</span>
+				</div>
+			</div>
+		</div>
+
+		<br><br><hr><br><br>
+		<div ng-show="loading">
+			<center><button class="btn btn-lg btn-warning" ng-disabled="true" ><span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span> Loading...</button></center>
+		</div>
+<!-- in case of any error while executing phantomjs script, the error is shown here -->
+		<div class="row" ng-show="phantomError">
+			<div class = "pad12 col-md-12 center-align">
+				<span class="glyphicon glyphicon-warning-sign xlargefont" style="color: red"></span>
+				<span class="xlargefont bold brown">{{phantomError}}<br><br></span>
+			</div>
+		</div>
+
+<!-- in case everything goes fine the data collected by phantom script is shown through the div code below -->		
+		<div ng-show="jsonFile">
+			<div class="row" ng-show="webpageError">
+				<div class = "pad12 col-md-12 center-align">
+					<span class="glyphicon glyphicon-warning-sign xlargefont" style="color: red"></span>
+					<span class="largefont bold"> The following report is not accurate because of the following error in the page: <br></span>
+					<span class="brown">{{webpageError}}<br><br></span>
+				</div>
+			</div>
+
+<!-- below div rows show the summary of the page -->
+			<div class="row">
+				
+				<div class = "pad12 col-md-5 right-align"><h2>URL: </h2></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="bold brown">{{jsonFile.summary.url}}</div>
+				
+			</div>
+			<div class="row">
+				
+				<div class = "pad12 col-md-5 right-align"><h2>Title: </h2></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="bold brown">{{jsonFile.summary.title}}</div>
+				
+			</div>
+			<div class="row">
+				
+				<div class = "pad12 col-md-5 right-align"><h2>Load Time: </h2></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="bold brown">{{jsonFile.summary.loadTime}} ms</div>
+				
+			</div>
+			<div class="row">
+				
+				<div class = "pad12 col-md-5 right-align"><h2>Page Size: </h2></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="bold brown">{{jsonFile.summary.pageSize}} bytes</div>
+				
+			</div>
+			<div class="row">
+				
+				<div class = "pad12 col-md-5 right-align"><h2>Resource Count: </h2></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="bold brown">{{jsonFile.resources.length}}</div>
+				
+			</div>
+			
+			<br><br><br><br>
+<!-- below div rows show the timings of the page if they are not zero -->
+			<div class="row" ng-show="jsonFile.timing.domLoading > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>domLoading: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.domLoading}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.domContentLoadedEventStart > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>domContentLoadedEventStart: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.domContentLoadedEventStart}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.domContentLoadedEventEnd > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>domContentLoadedEventEnd: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.domContentLoadedEventEnd}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.domInteractive > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>domInteractive: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.domInteractive}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.domComplete > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>domComplete: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.domComplete}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.domainLookupStart > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>domainLookupStart: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.domainLookupStart}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.domainLookupEnd > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>domainLookupEnd: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.domainLookupEnd}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.fetchStart > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>fetchStart: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.fetchStart}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.loadEventStart > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>loadEventStart: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.loadEventStart}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.loadEventEnd > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>loadEventEnd: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.loadEventEnd}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.navigationStart > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>navigationStart: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.navigationStart}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.redirectStart > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>redirectStart: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.redirectStart}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.redirectEnd > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>redirectEnd: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.redirectEnd}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.requestStart > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>requestStart: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.requestStart}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.responseStart > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>responseStart: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.responseStart}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.responseEnd > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>responseEnd: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.responseEnd}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.secureConnectionStart > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>secureConnectionStart: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.secureConnectionStart}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.unloadEventStart > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>unloadEventStart: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.unloadEventStart}} ms</div>
+				
+			</div>
+			<div class="row" ng-show="jsonFile.timing.unloadEventEnd > 0">
+				
+				<div class = "pad12 col-md-5 right-align"><h3>unloadEventEnd: </h3></div>
+				<div class = "pad12 col-md-7 left-align"><h3 class="brown">{{jsonFile.timing.unloadEventEnd}} ms</div>
+				
+			</div>
+			
+			<br><br><hr><br><br>
+<!-- below grid show the metrics of all the resources of the page -->
+			<div class="row grid-header" ng-show="jsonFile.resources.length > 0">				
+				<div class = "pad11 col-md-3 center-align"><h3>URL</h3></div>
+				<div class = "pad11 col-md-2 center-align"><h3>Content Type</h3></div>
+				<div class = "pad11 col-md-1 center-align"><h3>Method </h3></div>
+				<div class = "pad11 col-md-1 center-align"><h3> Size</h3></div>
+				<div class = "pad11 col-md-2 center-align"><h3>Request Time</h3></div>
+				<div class = "pad11 col-md-2 center-align"><h3>Response Time</h3></div>
+				<div class = "pad11 col-md-1 center-align"><h3>Duration</h3></div>
+			</div>
+			
+			<div ng-repeat="resource in jsonFile.resources" ng-show="jsonFile.resources.length > 0">
+				<div class="row">
+					<div class = "pad11 col-md-3 center-align brown"><span class="hidden-header">URL: </span><a href="{{resource.url}}" target="_blank">{{resource.url}}</a></div>
+					<div class = "pad11 col-md-2 center-align brown"><span class="hidden-header">Content Type: </span>{{resource.contentType}}</div>
+					<div class = "pad11 col-md-1 center-align brown"><span class="hidden-header">Method: </span>{{resource.method}}</div>
+					<div class = "pad11 col-md-1 center-align brown"><span class="hidden-header">Body Size: </span>{{resource.bodySize}}</div>
+					<div class = "pad11 col-md-2 center-align brown"><span class="hidden-header">Request Time: </span>{{resource.requestTime}}</div>
+					<div class = "pad11 col-md-2 center-align brown"><span class="hidden-header">Response Time: </span>{{resource.responseTime}}</div>
+					<div class = "pad11 col-md-1 center-align brown"><span class="hidden-header">Duration: </span>{{resource.duration}}</div>
+				</div>
+			</div>
+			
+		</div>
+	</body>
+</html>

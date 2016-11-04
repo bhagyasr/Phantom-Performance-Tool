@@ -1,0 +1,130 @@
+.glyphicon-refresh-animate {
+    -animation: spin .7s infinite linear;
+    -webkit-animation: spin2 .7s infinite linear;
+}
+
+@-webkit-keyframes spin2 {
+    from { -webkit-transform: rotate(0deg);}
+    to { -webkit-transform: rotate(360deg);}
+}
+
+@keyframes spin {
+    from { transform: scale(1) rotate(0deg);}
+    to { transform: scale(1) rotate(360deg);}
+}
+
+.pad12 {
+	padding: 1% 2%;
+}
+
+.pad11{
+	padding: 1%
+}
+
+.center-align{
+	text-align: center;
+}
+
+.left-align{
+	text-align: left;
+}
+
+.right-align{
+	text-align: right;
+}
+
+.grid-header{
+	display: inline;
+}
+
+.hidden-header{
+	display: none;
+	font-weight: bold;
+	color: black;
+	font-size: larger;
+}
+
+a{
+	overflow: hidden;
+	display: inline-block;
+	white-space:nowrap;
+	text-overflow: ellipsis;
+	width: 90%;
+}
+
+@media screen and (max-width: 991px) {
+	.left-align{
+		text-align: center;
+	}
+
+	.right-align{
+		text-align: center;
+	}
+
+	.pad12{
+		padding: 0%;
+	}
+
+	.pad11{
+		padding: 0%
+	}
+	
+	.row{
+		padding: 2%;
+	}
+
+	.grid-header{
+		display: none;
+	}
+
+	.hidden-header{
+		display: inline;
+	}
+
+	a{
+		overflow: hidden;
+		display: inline-block;
+		white-space:nowrap;
+		text-overflow: ellipsis;
+		width: 50%;
+	}
+}
+
+.bold {
+	font-weight: bold;
+}
+
+
+.brown {
+	color: brown;
+	font-style: italic;
+}
+
+input[type=checkbox] {
+  /* All browsers except webkit*/
+  transform: scale(2);
+
+  /* Webkit browsers*/
+  -webkit-transform: scale(2);
+}
+
+.loginbox{
+	font-size:x-large;
+	padding-top: 20px; 
+}
+
+.logintext{
+	padding-right : 10px;
+}
+
+.xxlargefont{
+	font-size: xx-large;
+}
+
+.xlargefont{
+	font-size: x-large;
+}
+
+.largefont{
+	font-size: large;
+}
